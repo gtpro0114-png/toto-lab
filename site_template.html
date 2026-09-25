@@ -63,6 +63,10 @@ th{font-size:12px;color:var(--muted);font-weight:600}
 <div id="list"></div>
 
 
+<h2 id="crazy">미친 배당 기준선 — 이변 쪽만</h2>
+<p class="hint">해외 배당사들이 매긴 확률로 계산한 적정 배당에 15%를 더한 숫자입니다. <b>베트맨 배당이 이 기준선보다 높으면</b>, 베트맨이 원래보다 후하게 쳐주는 이변입니다. 국내 구매자가 반대쪽으로 몰린 경기에서 주로 생깁니다. 맞을 확률 자체는 낮으니 한 경기씩, 정해 둔 금액으로만.</p>
+<div id="crazylist"></div>
+
 <h2 id="value">가치 찾기 — 배당은 높은데 확률이 받쳐 주는 선택</h2>
 <p class="hint">각 선택의 <b>최소 가치 배당</b>보다 베트맨 배당이 높으면, 확률에 비해 배당이 후한 선택입니다. 베트맨 배당을 칸에 적으면 기대값이 바로 계산되고, 적은 값은 이 기기에 저장됩니다.</p>
 <div class="row"><label><input type="checkbox" id="hionly" checked> 배당 2.0 이상 선택만 (확률 50% 이하)</label>
@@ -94,7 +98,7 @@ let league='all',src='backtest';
 const pickTeam=r=>r.pick===0?r.home:r.pick===2?r.away:'무승부';
 function chips(){const ls=['all',...new Set(D.upcoming.map(r=>r.league))];
   $('#lf').innerHTML=ls.map(k=>`<button class="chip" aria-pressed="${k===league}" data-k="${k}">${k==='all'?'전체':esc(D.names[k]||k)}</button>`).join('');
-  $('#lf').querySelectorAll('button').forEach(b=>b.onclick=()=>{league=b.dataset.k;chips();list();vlist()})}
+  $('#lf').querySelectorAll('button').forEach(b=>b.onclick=()=>{league=b.dataset.k;chips();list();vlist();crazy()})}
 function detail(r){let s=[];
   if(r.sport==='soccer'&&r.exp)s.push(`예상 득점 ${r.exp[0]} : ${r.exp[1]}`+(r.top?` · 유력 스코어 ${r.top.join(', ')}`:''));
   if(r.sport==='basketball'&&r.exp)s.push(`예상 점수 ${r.exp[0]} : ${r.exp[1]}`);
@@ -145,7 +149,7 @@ function vlist(){$('#minv2t').textContent=$('#minv2').value+'%';
    <td><input type="number" step="0.01" min="1" inputmode="decimal" aria-label="${esc(y.lab)} 베트맨 배당" data-key="${esc(y.key)}" value="${y.bo>1?y.bo:''}"></td>
    <td class="${y.ev==null?'':y.ev>0?'ev-pos':'ev-neg'}">${y.ev==null?'–':(y.ev>0?'+':'')+(y.ev*100).toFixed(1)+'%'}</td></tr>`).join('')}</tbody></table></div></div>`).join('')
    :'<div class="empty">조건에 맞는 선택이 없습니다. 최소 확률을 낮추거나 “배당 2.0 이상만”을 꺼 보세요.</div>';
-  $('#vlist').querySelectorAll('input[data-key]').forEach(inp=>inp.onchange=()=>{const v=parseFloat(inp.value);if(v>1)bOdds[inp.dataset.key]=v;else delete bOdds[inp.dataset.key];store.set('betman-odds',bOdds);vlist()})}
+  $('#vlist').querySelectorAll('input[data-key]').forEach(inp=>inp.onchange=()=>{const v=parseFloat(inp.value);if(v>1)bOdds[inp.dataset.key]=v;else delete bOdds[inp.dataset.key];store.set('betman-odds',bOdds);vlist();crazy()})}
 function mcmp(){const m=D.market_cmp;if(!m){$('#mcmp').innerHTML='<span class="hint">해외 배당이 붙은 경기가 채점되면 여기서 비교합니다. 해외 배당 키를 아직 안 넣었다면 README의 “해외 배당 연결”을 보세요.</span>';return}
   const r=(x,n)=>x==null?'–':`${(x>0?'+':'')+(x*100).toFixed(1)}% (${n}건)`;
   $('#mcmp').innerHTML=`<div class="tablewrap" style="border:0"><table><thead><tr><th>예측</th><th>예측 오차 (${m.n}경기)</th></tr></thead><tbody>
@@ -153,8 +157,14 @@ function mcmp(){const m=D.market_cmp;if(!m){$('#mcmp').innerHTML='<span class="h
   <p class="hint" style="margin:8px 0 4px">낮을수록 정확합니다. 최종이 시장보다 낮으면 모델이 시장이 놓친 정보를 조금이라도 더하고 있다는 뜻이고, 높으면 모델 비중을 줄여야 합니다.</p>
   <div>“모델↑” 선택에 해외 최고 배당으로 1씩 걸었다면: <b class="${m.value_roi>0?'pos':'neg'}">${r(m.value_roi,m.value_n)}</b> · 비교: 시장 1순위에 걸었다면 <b>${r(m.fav_roi,m.fav_n)}</b></div>
   <p class="hint" style="margin:6px 0 0">해외 최고 배당 기준이라 베트맨보다 훨씬 유리한 조건입니다. 여기서도 수백 건 넘게 +가 유지되지 않으면 베트맨에서는 더 어렵습니다.</p>`}
+function crazy(){const m=D.crazy||0.15,out=[];
+  D.upcoming.filter(r=>(league==='all'||r.league===league)&&r.p_market).forEach(r=>{const pm=r.p_market,labs=LAB(r),fav=pm.indexOf(Math.max(...pm));
+    for(let k=0;k<3;k++){if(k===fav||!labs[k]||pm[k]<0.12)continue;const fair=1/pm[k],line=fair*(1+m),bo=parseFloat(bOdds[r.id+'|'+k]);out.push({r,k,lab:labs[k],p:pm[k],fair,line,bo})}});
+  out.sort((a,b)=>b.p-a.p);
+  $('#crazylist').innerHTML=out.length?`<div class="tablewrap"><table><thead><tr><th>경기</th><th>이변 선택</th><th>해외 확률</th><th>적정 배당</th><th>미친 배당 기준선</th><th>베트맨</th></tr></thead><tbody>${out.slice(0,40).map(x=>`<tr><td>${esc(x.r.kst)} · ${esc(x.r.lname)}<br><small style="color:var(--muted)">${esc(x.r.home)} vs ${esc(x.r.away)}</small></td><td>${esc(x.lab)}</td><td>${pct(x.p)}</td><td>${x.fair.toFixed(2)}</td><td><b>${x.line.toFixed(2)} 이상</b></td><td>${x.bo>1?(x.bo>=x.line?`<span class="ev-pos">${x.bo} 미친 배당</span>`:`<span class="ev-neg">${x.bo}</span>`):'–'}</td></tr>`).join('')}</tbody></table></div><p class="hint">“베트맨” 칸은 아래 가치 찾기에서 그 선택의 베트맨 배당을 적어 두면 채워집니다.</p>`
+   :'<div class="empty">해외 배당이 붙은 경기가 아직 없습니다. 해외 배당은 매일 오전 7시에 30시간 안에 열리는 경기만 받아옵니다.</div>'}
 $('#hionly').onchange=vlist;$('#minv2').oninput=vlist;
-$('#minp').oninput=list;chips();list();vlist();mcmp();stats();recent();
+$('#minp').oninput=list;chips();list();vlist();crazy();mcmp();stats();recent();
 </script>
 </body>
 </html>

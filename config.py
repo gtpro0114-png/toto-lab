@@ -43,3 +43,4 @@ ODDS_WINDOW_HOURS = 30     # 30시간 안에 경기가 있는 리그만 배당 �
 CREDIT_FLOOR = 25           # 남은 크레딧이 이 밑이면 유료 호출 중단
 MARKET_WEIGHT = 0.7         # 최종 확률 = 해외시장 70% + 내 모델 30%
 VALUE_GAP = 0.05
+CRAZY_MARGIN = 0.15         # 베트맨 배당이 해외 적정 배당보다 15% 이상 높으면 '미친 배당'

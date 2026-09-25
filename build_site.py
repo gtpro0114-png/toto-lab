@@ -81,7 +81,7 @@ def run(now=None, log=print):
         }
 
     # 모델 vs 해외시장 vs 최종(혼합) 정확도, 그리고 '의견 차이' 가상 배팅 성적 (해외 최고 배당 기준)
-    from config import VALUE_GAP, MARKET_WEIGHT
+    from config import VALUE_GAP, MARKET_WEIGHT, CRAZY_MARGIN
     mk = [r for r in graded if r.get("p_market") and r.get("p_model")]
     def br(r, key):
         return sum((r[key][k] - (1 if r["result"] == k else 0)) ** 2 for k in range(3))
@@ -129,7 +129,7 @@ def run(now=None, log=print):
 
     payload = {"updated": now.astimezone(KST).strftime("%Y-%m-%d %H:%M"), "names": names,
                "upcoming": upcoming, "recent": recent, "stats": stats,
-               "market_cmp": market_cmp, "gap": VALUE_GAP}
+               "market_cmp": market_cmp, "gap": VALUE_GAP, "crazy": CRAZY_MARGIN}
     with open(os.path.join(ROOT, "site_template.html"), encoding="utf-8") as f:
         html = f.read()
     blob = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
