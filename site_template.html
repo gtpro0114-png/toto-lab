@@ -48,6 +48,11 @@ th{font-size:12px;color:var(--muted);font-weight:600}
 .vgame input{width:78px;font:inherit;font-variant-numeric:tabular-nums;color:var(--ink);background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:4px 6px;text-align:right}
 .badge{display:inline-block;font-size:11.5px;font-weight:600;padding:1px 7px;border-radius:99px;background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
 .ev-pos{color:var(--good);font-weight:700}.ev-neg{color:var(--bad)}
+.row input[type=number]{width:96px;font:inherit;font-variant-numeric:tabular-nums;color:var(--ink);background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:4px 6px}
+.cbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.cbox ol{margin:6px 0 8px;padding-left:20px;font-size:13.5px}
+.cbox .big{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+.est{font-size:11px;color:var(--warn);font-weight:600}
 </style>
 </head>
 <body>
@@ -72,6 +77,11 @@ th{font-size:12px;color:var(--muted);font-weight:600}
 <div class="row"><label><input type="checkbox" id="hionly" checked> 배당 2.0 이상 선택만 (확률 50% 이하)</label>
 <label for="minv2">최소 확률</label><input id="minv2" type="range" min="10" max="50" step="5" value="25"><span id="minv2t">25%</span></div>
 <div id="vlist"></div>
+<h2 id="combo100">한 방 조합 — 1만 원으로 100만 원 노리기</h2>
+<p class="hint">서로 다른 경기에서 하나씩 골라 합성 배당이 목표 이상이 되는 조합 중, <b>맞을 확률이 가장 높은 순서</b>로 5개를 보여줍니다. 베트맨 배당을 적어 둔 선택은 그 배당으로, 안 적은 선택은 <span class="est">추정</span> 배당(해외 적정 배당 × 0.88)으로 계산합니다. 사기 전에는 반드시 베트맨 배당을 적고 다시 확인하세요.</p>
+<div class="row"><label for="ctarget">목표 배당</label><input id="ctarget" type="number" value="100" step="10" min="10"><label for="cstake">구매 금액</label><input id="cstake" type="number" value="10000" step="1000" min="1000"><label><input type="checkbox" id="conlyent"> 베트맨 배당 적은 선택만 쓰기</label></div>
+<div id="c100"></div>
+
 <h2>상위 픽을 묶으면</h2>
 <div class="combo" id="combo"></div>
 
@@ -145,11 +155,11 @@ function vlist(){$('#minv2t').textContent=$('#minv2').value+'%';
   $('#vlist').innerHTML=items.length?items.map(({r,rows})=>`<div class="vgame"><div class="meta">${esc(r.kst)} · ${esc(r.lname)}${r.n_books?` · 해외 배당사 ${r.n_books}곳 반영`:' · 해외 배당 없음(모델만)'}</div>
    <div class="teams">${esc(r.home)} <span style="color:var(--muted);font-weight:400">vs</span> ${esc(r.away)}</div>
    <div style="overflow-x:auto"><table><thead><tr><th>선택</th><th>확률</th><th>최소 가치 배당</th><th>베트맨 배당</th><th>기대값</th></tr></thead><tbody>
-   ${rows.map(y=>`<tr><td>${esc(y.lab)}${y.gap!=null&&y.gap>=D.gap?' <span class="badge" title="내 모델이 해외 시장보다 높게 봄">모델↑ ${(y.gap*100).toFixed(0)}%p</span>':''}</td><td>${pct(y.p)}</td><td>${y.fair.toFixed(2)}</td>
+   ${rows.map(y=>`<tr><td>${esc(y.lab)}${y.gap!=null&&y.gap>=D.gap?` <span class="badge" title="내 모델이 해외 시장보다 높게 봄">모델↑ ${(y.gap*100).toFixed(0)}%p</span>`:''}</td><td>${pct(y.p)}</td><td>${y.fair.toFixed(2)}</td>
    <td><input type="number" step="0.01" min="1" inputmode="decimal" aria-label="${esc(y.lab)} 베트맨 배당" data-key="${esc(y.key)}" value="${y.bo>1?y.bo:''}"></td>
    <td class="${y.ev==null?'':y.ev>0?'ev-pos':'ev-neg'}">${y.ev==null?'–':(y.ev>0?'+':'')+(y.ev*100).toFixed(1)+'%'}</td></tr>`).join('')}</tbody></table></div></div>`).join('')
    :'<div class="empty">조건에 맞는 선택이 없습니다. 최소 확률을 낮추거나 “배당 2.0 이상만”을 꺼 보세요.</div>';
-  $('#vlist').querySelectorAll('input[data-key]').forEach(inp=>inp.onchange=()=>{const v=parseFloat(inp.value);if(v>1)bOdds[inp.dataset.key]=v;else delete bOdds[inp.dataset.key];store.set('betman-odds',bOdds);vlist();crazy()})}
+  $('#vlist').querySelectorAll('input[data-key]').forEach(inp=>inp.onchange=()=>{const v=parseFloat(inp.value);if(v>1)bOdds[inp.dataset.key]=v;else delete bOdds[inp.dataset.key];store.set('betman-odds',bOdds);vlist();crazy();combo100()})}
 function mcmp(){const m=D.market_cmp;if(!m){$('#mcmp').innerHTML='<span class="hint">해외 배당이 붙은 경기가 채점되면 여기서 비교합니다. 해외 배당 키를 아직 안 넣었다면 README의 “해외 배당 연결”을 보세요.</span>';return}
   const r=(x,n)=>x==null?'–':`${(x>0?'+':'')+(x*100).toFixed(1)}% (${n}건)`;
   $('#mcmp').innerHTML=`<div class="tablewrap" style="border:0"><table><thead><tr><th>예측</th><th>예측 오차 (${m.n}경기)</th></tr></thead><tbody>
@@ -163,8 +173,27 @@ function crazy(){const m=D.crazy||0.15,out=[];
   out.sort((a,b)=>b.p-a.p);
   $('#crazylist').innerHTML=out.length?`<div class="tablewrap"><table><thead><tr><th>경기</th><th>이변 선택</th><th>해외 확률</th><th>적정 배당</th><th>미친 배당 기준선</th><th>베트맨</th></tr></thead><tbody>${out.slice(0,40).map(x=>`<tr><td>${esc(x.r.kst)} · ${esc(x.r.lname)}<br><small style="color:var(--muted)">${esc(x.r.home)} vs ${esc(x.r.away)}</small></td><td>${esc(x.lab)}</td><td>${pct(x.p)}</td><td>${x.fair.toFixed(2)}</td><td><b>${x.line.toFixed(2)} 이상</b></td><td>${x.bo>1?(x.bo>=x.line?`<span class="ev-pos">${x.bo} 미친 배당</span>`:`<span class="ev-neg">${x.bo}</span>`):'–'}</td></tr>`).join('')}</tbody></table></div><p class="hint">“베트맨” 칸은 아래 가치 찾기에서 그 선택의 베트맨 배당을 적어 두면 채워집니다.</p>`
    :'<div class="empty">해외 배당이 붙은 경기가 아직 없습니다. 해외 배당은 매일 오전 7시에 30시간 안에 열리는 경기만 받아옵니다.</div>'}
+function combo100(){const target=+$('#ctarget').value||100,stake=+$('#cstake').value||10000,only=$('#conlyent').checked,games=[];
+  D.upcoming.forEach(r=>{const labs=LAB(r),opts=[];
+    for(let k=0;k<3;k++){if(!labs[k])continue;const p=r.p[k];if(!(p>0.05))continue;const bo=parseFloat(bOdds[r.id+'|'+k]),ent=bo>1;if(only&&!ent)continue;
+      const pm=r.p_market?r.p_market[k]:p;const o=ent?bo:Math.max(1.01,Math.floor(0.88/pm*100)/100);opts.push({r,k,lab:labs[k],p,o,ent})}
+    if(opts.length)games.push(opts.sort((a,b)=>b.p*b.o-a.p*a.o))});
+  games.sort((a,b)=>b[0].p*b[0].o-a[0].p*a[0].o);
+  const best=[];let nodes=0;
+  const dfs=(i,ch,P,O)=>{if(++nodes>300000)return;
+    if(O>=target&&ch.length>=2){best.push({legs:ch.slice(),P,O});best.sort((a,b)=>b.P-a.P);if(best.length>5)best.pop();return}
+    if(ch.length>=10||i>=games.length)return;if(best.length===5&&P<=best[4].P)return;
+    for(const x of games[i]){ch.push(x);dfs(i+1,ch,P*x.p,O*x.o);ch.pop()}dfs(i+1,ch,P,O)};
+  dfs(0,[],1,1);
+  if(!best.length){$('#c100').innerHTML='<div class="empty">목표 배당을 만들 수 있는 조합이 없습니다. 경기가 더 올라오거나 목표 배당을 낮춰 보세요.</div>';return}
+  $('#c100').innerHTML=best.map((c,i)=>{const pay=stake*c.O,taxed=(c.O>100||pay>2000000)?pay-(pay-stake)*0.22:pay,ev=c.P*c.O-1,anyEst=c.legs.some(x=>!x.ent);
+    return `<div class="cbox"><div class="meta">${i+1}번 조합 · ${c.legs.length}경기</div>
+    <ol>${c.legs.map(x=>`<li>${esc(x.r.kst)} ${esc(x.r.lname)} · ${esc(x.r.home)} vs ${esc(x.r.away)} → <b>${esc(x.lab)}</b> @${x.o.toFixed(2)}${x.ent?'':' <span class="est">추정</span>'} (확률 ${pct(x.p)})</li>`).join('')}</ol>
+    <div class="kv" style="display:flex;flex-wrap:wrap;gap:4px 18px"><div>합성 배당 <span class="big">${c.O.toFixed(1)}배</span></div><div>맞을 확률 <span class="big">${pct(c.P)}</span> <small>(약 ${Math.round(1/c.P)}번에 1번)</small></div>
+    <div>${stake.toLocaleString()}원 → 세후 약 <span class="big">${Math.round(taxed).toLocaleString()}원</span></div><div>기대값 <b class="${ev>0?'pos':'neg'}">${(ev>0?'+':'')+(ev*100).toFixed(0)}%</b>${anyEst?' <span class="est">추정 포함</span>':''}</div></div></div>`}).join('')+'<p class="hint">기대값은 같은 조합을 수없이 반복했을 때 평균 손익입니다. 추정 배당만으로 만든 조합은 베트맨 공제 때문에 거의 항상 마이너스로 나옵니다. 플러스가 나오는 건 미친 배당(베트맨 배당이 기준선 이상)을 적어 넣은 선택이 섞였을 때뿐입니다. 100배를 넘기면 이익금의 22%가 세금으로 떼입니다.</p>'}
+$('#ctarget').oninput=combo100;$('#cstake').oninput=combo100;$('#conlyent').onchange=combo100;
 $('#hionly').onchange=vlist;$('#minv2').oninput=vlist;
-$('#minp').oninput=list;chips();list();vlist();crazy();mcmp();stats();recent();
+$('#minp').oninput=list;chips();list();vlist();crazy();combo100();mcmp();stats();recent();
 </script>
 </body>
 </html>
