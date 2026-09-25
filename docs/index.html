@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>승률 연구소 · 오늘의 확률</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EDF1F4;--panel:#fff;--ink:#15202E;--muted:#5B6878;--line:#D3DBE3;--model:#1D5FA8;--good:#16806A;--bad:#B83A2B;--warn:#A86A12;--soft:#F5F7FA;--chip:#E3E9EF;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10161E;--panel:#18212C;--ink:#E6EDF3;--muted:#93A1B0;--line:#2A3644;--model:#5B9BE0;--good:#3BB08F;--bad:#E06A5A;--warn:#E0A33A;--soft:#1D2733;--chip:#243040}}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;font-size:15px;line-height:1.6}
+.wrap{max-width:880px;margin:0 auto;padding:20px 16px 48px}
+h1{font-family:"Black Han Sans","IBM Plex Sans KR",sans-serif;font-weight:400;font-size:clamp(32px,7vw,52px);line-height:1;margin:6px 0 6px}
+.sub{color:var(--muted);margin:0 0 4px}
+.upd{font-size:13px;color:var(--muted)}
+.notice{margin:14px 0;padding:10px 14px;border-left:4px solid var(--warn);background:var(--panel);border-radius:0 8px 8px 0;font-size:14px}
+h2{font-size:18px;margin:26px 0 10px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chip{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:99px;padding:5px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip:focus-visible{outline:3px solid var(--model);outline-offset:2px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;font-size:13px;color:var(--muted)}
+.row input{accent-color:var(--model)}
+.game{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:4px 12px}
+.meta{font-size:12.5px;color:var(--muted)}
+.teams{font-weight:600}
+.pick{grid-row:1/3;grid-column:2;text-align:right;align-self:center}
+.pick b{display:block;font-size:24px;font-variant-numeric:tabular-nums;color:var(--model);line-height:1.1}
+.pick span{font-size:13px;font-weight:600}
+.bar{grid-column:1/-1;display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--soft);margin-top:4px}
+.bar i{display:block;height:100%}
+.bar i:nth-child(1){background:var(--model)}.bar i:nth-child(2){background:#9AA6B4}.bar i:nth-child(3){background:#C6CED8}
+.detail{grid-column:1/-1;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.combo{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-size:12px;color:var(--muted);font-weight:600}
+.pos{color:var(--good)}.neg{color:var(--bad)}
+.empty{color:var(--muted);padding:18px;text-align:center;background:var(--panel);border:1px dashed var(--line);border-radius:12px}
+.hint{font-size:13px;color:var(--muted);max-width:70ch}
+.vgame{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.vgame table{margin-top:6px}.vgame td,.vgame th{padding:6px 6px}
+.vgame input{width:78px;font:inherit;font-variant-numeric:tabular-nums;color:var(--ink);background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:4px 6px;text-align:right}
+.badge{display:inline-block;font-size:11.5px;font-weight:600;padding:1px 7px;border-radius:99px;background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+.ev-pos{color:var(--good);font-weight:700}.ev-neg{color:var(--bad)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>승률 연구소</h1>
+<p class="sub">공개 경기 데이터와 해외 배당을 섞어 매일 자동 계산하는 확률표입니다. 위쪽은 “잘 맞을 순서”, 아래 “가치 찾기”는 “배당 대비 남는 순서”입니다.</p>
+<div class="upd" id="upd"></div>
+<div class="notice">확률이 높은 픽일수록 베트맨 배당도 낮습니다. 여기 순위는 “잘 맞을 순서”이지 “돈이 될 순서”가 아닙니다. 부상·결장 뉴스는 모델이 모릅니다.</div>
+
+<h2>앞으로 3일, 확률 높은 순</h2>
+<div class="chips" id="lf" role="group" aria-label="리그 선택"></div>
+<div class="row"><label for="minp">최소 확률</label><input id="minp" type="range" min="30" max="85" step="5" value="50"><span id="minv">50%</span></div>
+<div id="list"></div>
+
+
+<h2 id="crazy">미친 배당 기준선 — 이변 쪽만</h2>
+<p class="hint">해외 배당사들이 매긴 확률로 계산한 적정 배당에 15%를 더한 숫자입니다. <b>베트맨 배당이 이 기준선보다 높으면</b>, 베트맨이 원래보다 후하게 쳐주는 이변입니다. 국내 구매자가 반대쪽으로 몰린 경기에서 주로 생깁니다. 맞을 확률 자체는 낮으니 한 경기씩, 정해 둔 금액으로만.</p>
+<div id="crazylist"></div>
+
+<h2 id="value">가치 찾기 — 배당은 높은데 확률이 받쳐 주는 선택</h2>
+<p class="hint">각 선택의 <b>최소 가치 배당</b>보다 베트맨 배당이 높으면, 확률에 비해 배당이 후한 선택입니다. 베트맨 배당을 칸에 적으면 기대값이 바로 계산되고, 적은 값은 이 기기에 저장됩니다.</p>
+<div class="row"><label><input type="checkbox" id="hionly" checked> 배당 2.0 이상 선택만 (확률 50% 이하)</label>
+<label for="minv2">최소 확률</label><input id="minv2" type="range" min="10" max="50" step="5" value="25"><span id="minv2t">25%</span></div>
+<div id="vlist"></div>
+<h2>상위 픽을 묶으면</h2>
+<div class="combo" id="combo"></div>
+
+<h2>모델 성적표</h2>
+<p class="hint"><b>과거 검증</b>은 이미 끝난 경기를 “그 경기 전날까지의 데이터만으로” 예측해 채점한 것이고, <b>실시간</b>은 경기 전에 실제로 낸 예측을 채점한 것입니다. 오른쪽 “예상” 열과 “실제” 적중률이 비슷할수록 모델의 확률을 믿을 만하다는 뜻입니다.</p>
+<div class="chips" id="sf" role="group" aria-label="성적 구분"></div>
+<div class="tablewrap" style="margin-bottom:12px"><table><thead><tr><th>확률 구간</th><th>경기 수</th><th>예상 적중률</th><th>실제 적중률</th></tr></thead><tbody id="bands"></tbody></table></div>
+<div class="tablewrap"><table><thead><tr><th>리그</th><th>경기 수</th><th>예상</th><th>실제</th><th>예측 오차</th></tr></thead><tbody id="leagues"></tbody></table></div>
+<p class="hint">예측 오차(브라이어 점수)는 낮을수록 정확합니다. 참고로 축구 승무패를 아무 정보 없이 찍으면 약 0.63, 농구·야구 승패를 반반으로 찍으면 0.50입니다.</p>
+
+
+<h2>내 모델 vs 해외 시장</h2>
+<div class="combo" id="mcmp"></div>
+<h2>최근 채점된 실시간 예측</h2>
+<div class="tablewrap"><table><thead><tr><th>날짜</th><th>경기</th><th>픽</th><th>확률</th><th>결과</th></tr></thead><tbody id="recent"></tbody></table></div>
+</div>
+<script id="data" type="application/json">{"updated": "2026-09-25 18:11", "names": {"epl": "프리미어리그", "champ": "챔피언십", "laliga": "라리가", "seriea": "세리에A", "bundesliga": "분데스리가", "ligue1": "리그1", "eredivisie": "에레디비시", "mls": "MLS", "j1": "J1리그", "ucl": "챔피언스리그", "kleague": "K리그1", "mlb": "MLB", "kbo": "KBO", "npb": "NPB", "nba": "NBA"}, "upcoming": [], "recent": [], "stats": {"backtest": {"all": {"n": 0}, "leagues": {}, "bands": [{"band": "0~50%", "n": 0}, {"band": "50~60%", "n": 0}, {"band": "60~70%", "n": 0}, {"band": "70~80%", "n": 0}, {"band": "80~100%", "n": 0}], "band_sport": {}}, "live": {"all": {"n": 0}, "leagues": {}, "bands": [{"band": "0~50%", "n": 0}, {"band": "50~60%", "n": 0}, {"band": "60~70%", "n": 0}, {"band": "70~80%", "n": 0}, {"band": "80~100%", "n": 0}], "band_sport": {}}}, "market_cmp": null, "gap": 0.05, "crazy": 0.15}</script>
+<script>
+const D=JSON.parse(document.getElementById('data').textContent);
+const $=s=>document.querySelector(s);const pct=x=>x==null||!isFinite(x)?'–':(x*100).toFixed(1)+'%';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#upd').textContent='마지막 업데이트 '+D.updated+' (한국시간)';
+let league='all',src='backtest';
+const pickTeam=r=>r.pick===0?r.home:r.pick===2?r.away:'무승부';
+function chips(){const ls=['all',...new Set(D.upcoming.map(r=>r.league))];
+  $('#lf').innerHTML=ls.map(k=>`<button class="chip" aria-pressed="${k===league}" data-k="${k}">${k==='all'?'전체':esc(D.names[k]||k)}</button>`).join('');
+  $('#lf').querySelectorAll('button').forEach(b=>b.onclick=()=>{league=b.dataset.k;chips();list();vlist();crazy()})}
+function detail(r){let s=[];
+  if(r.sport==='soccer'&&r.exp)s.push(`예상 득점 ${r.exp[0]} : ${r.exp[1]}`+(r.top?` · 유력 스코어 ${r.top.join(', ')}`:''));
+  if(r.sport==='basketball'&&r.exp)s.push(`예상 점수 ${r.exp[0]} : ${r.exp[1]}`);
+  if(r.sport==='baseball'&&r.p_model){if(r.exp)s.push(`예상 득점 ${r.exp[0]} : ${r.exp[1]}`);if(r.sp&&(r.sp[0]||r.sp[1]))s.push(`선발 ${esc(r.sp[0]||'미정')}${r.era&&r.era[0]!=null?' ('+r.era[0]+')':''} vs ${esc(r.sp[1]||'미정')}${r.era&&r.era[1]!=null?' ('+r.era[1]+')':''}`);else s.push('선발 미발표 — 팀 기록만 반영')}
+  const c=r.calib;if(c&&c[1]>=20)s.push(`이 확률대 과거 적중 ${pct(c[0]/c[1])} (${c[1]}경기)`);
+  if(r.p_market&&r.p_model)s.push(`내 모델 ${pct(r.p_model[r.pick])} · 해외시장 ${pct(r.p_market[r.pick])}`);else if(r.p_market)s.push(`해외시장 확률 (배당사 ${r.n_books}곳)`);else s.push('해외 배당 없음 — 모델만');
+  s.push(r.sport==='soccer'?`홈 ${pct(r.p[0])} · 무 ${pct(r.p[1])} · 원정 ${pct(r.p[2])}`:`홈 ${pct(r.p[0])} · 원정 ${pct(r.p[2])}`);
+  return s.join(' · ')}
+function filtered(){const m=+$('#minp').value/100;return D.upcoming.filter(r=>(league==='all'||r.league===league)&&r.pick_p>=m)}
+function list(){$('#minv').textContent=$('#minp').value+'%';const rs=filtered();
+  $('#list').innerHTML=rs.length?rs.map(r=>`<div class="game"><div class="meta">${esc(r.kst)} · ${esc(r.lname)}</div>
+    <div class="pick"><b>${pct(r.pick_p)}</b><span>${esc(r.pick_label)}</span></div>
+    <div class="teams">${esc(r.home)} <span style="color:var(--muted);font-weight:400">vs</span> ${esc(r.away)}</div>
+    <div class="bar" aria-hidden="true"><i style="width:${r.p[0]*100}%"></i><i style="width:${r.p[1]*100}%"></i><i style="width:${r.p[2]*100}%"></i></div>
+    <div class="detail">추천: <b style="color:var(--ink)">${esc(pickTeam(r))}</b> · ${detail(r)}</div></div>`).join('')
+    :'<div class="empty">조건에 맞는 경기가 없습니다. 최소 확률을 낮추거나 다른 리그를 골라 보세요. 시즌 휴식기인 리그는 경기가 나오지 않습니다.</div>';
+  combo(rs)}
+function combo(rs){const t=rs.slice(0,3);if(t.length<2){$('#combo').innerHTML='<span class="hint">2경기 이상 있어야 계산합니다.</span>';return}
+  const p2=t[0].pick_p*t[1].pick_p,p3=t.length>2?p2*t[2].pick_p:null;
+  $('#combo').innerHTML=`<div>1·2위 묶음: <b>${pct(p2)}</b>${p3!=null?` · 1·2·3위 묶음: <b>${pct(p3)}</b>`:''}</div>
+  <p class="hint" style="margin:6px 0 0">가장 확실한 경기만 골라도 3개를 묶으면 이 정도로 떨어집니다. 모델 오차까지 생각하면 실제로는 조금 더 낮다고 보는 게 안전합니다. 같은 경기끼리는 묶을 수 없습니다.</p>`}
+function stats(){const S=D.stats[src]||{};
+  $('#sf').innerHTML=[['backtest','과거 검증'],['live','실시간']].map(([k,n])=>`<button class="chip" aria-pressed="${k===src}" data-k="${k}">${n} (${(D.stats[k]&&D.stats[k].all&&D.stats[k].all.n)||0}경기)</button>`).join('');
+  $('#sf').querySelectorAll('button').forEach(b=>b.onclick=()=>{src=b.dataset.k;stats()});
+  const bands=(S.bands||[]).filter(b=>b.n);
+  $('#bands').innerHTML=bands.length?bands.map(b=>{const d=b.hit-b.exp;return `<tr><td>${b.band}</td><td>${b.n}</td><td>${pct(b.exp)}</td><td class="${d>=0?'pos':'neg'}">${pct(b.hit)}</td></tr>`}).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--muted)">아직 채점된 예측이 없습니다.</td></tr>';
+  const L=Object.entries(S.leagues||{}).filter(([,v])=>v.n).sort((a,b)=>b[1].n-a[1].n);
+  const a=S.all||{};
+  $('#leagues').innerHTML=L.length?L.map(([k,v])=>`<tr><td>${esc(D.names[k]||k)}</td><td>${v.n}</td><td>${pct(v.exp)}</td><td>${pct(v.hit)}</td><td>${v.brier.toFixed(3)}</td></tr>`).join('')+(a.n?`<tr><td><b>전체</b></td><td><b>${a.n}</b></td><td>${pct(a.exp)}</td><td><b>${pct(a.hit)}</b></td><td>${a.brier.toFixed(3)}</td></tr>`:''):'<tr><td colspan="5" style="text-align:center;color:var(--muted)">아직 데이터가 없습니다.</td></tr>'}
+function recent(){$('#recent').innerHTML=D.recent.length?D.recent.map(r=>`<tr><td>${esc(r.kst)}</td><td>${esc(r.home)} vs ${esc(r.away)}<br><small style="color:var(--muted)">${esc(r.lname)} · ${esc(r.score||'')}</small></td><td>${esc(pickTeam(r))}</td><td>${pct(r.pick_p)}</td><td class="${r.hit?'pos':'neg'}">${r.hit?'적중':'실패'}</td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted)">실시간 예측은 경기가 끝나는 대로 여기 쌓입니다.</td></tr>'}
+
+const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let bOdds=store.get('betman-odds')||{};
+const LAB=r=>r.sport==='soccer'?[r.home+' 승','무승부',r.away+' 승']:[r.home+' 승',null,r.away+' 승'];
+function vrows(r){const labs=LAB(r),minp=+$('#minv2').value/100,hi=$('#hionly').checked;const rows=[];
+  for(let k=0;k<3;k++){if(!labs[k])continue;const p=r.p[k];if(p<minp)continue;if(hi&&p>0.5)continue;
+    const key=r.id+'|'+k,bo=parseFloat(bOdds[key]);const ev=bo>1?p*bo-1:null;
+    const gap=r.p_market&&r.p_model?r.p_model[k]-r.p_market[k]:null;rows.push({k,lab:labs[k],p,fair:1/p,key,bo,ev,gap})}
+  return rows}
+function vlist(){$('#minv2t').textContent=$('#minv2').value+'%';
+  const items=D.upcoming.filter(r=>league==='all'||r.league===league).map(r=>({r,rows:vrows(r)})).filter(x=>x.rows.length);
+  const score=x=>{const evs=x.rows.map(y=>y.ev).filter(v=>v!=null);return evs.length?10+Math.max(...evs):Math.max(...x.rows.map(y=>y.p))};
+  items.sort((a,b)=>score(b)-score(a));
+  $('#vlist').innerHTML=items.length?items.map(({r,rows})=>`<div class="vgame"><div class="meta">${esc(r.kst)} · ${esc(r.lname)}${r.n_books?` · 해외 배당사 ${r.n_books}곳 반영`:' · 해외 배당 없음(모델만)'}</div>
+   <div class="teams">${esc(r.home)} <span style="color:var(--muted);font-weight:400">vs</span> ${esc(r.away)}</div>
+   <div style="overflow-x:auto"><table><thead><tr><th>선택</th><th>확률</th><th>최소 가치 배당</th><th>베트맨 배당</th><th>기대값</th></tr></thead><tbody>
+   ${rows.map(y=>`<tr><td>${esc(y.lab)}${y.gap!=null&&y.gap>=D.gap?' <span class="badge" title="내 모델이 해외 시장보다 높게 봄">모델↑ ${(y.gap*100).toFixed(0)}%p</span>':''}</td><td>${pct(y.p)}</td><td>${y.fair.toFixed(2)}</td>
+   <td><input type="number" step="0.01" min="1" inputmode="decimal" aria-label="${esc(y.lab)} 베트맨 배당" data-key="${esc(y.key)}" value="${y.bo>1?y.bo:''}"></td>
+   <td class="${y.ev==null?'':y.ev>0?'ev-pos':'ev-neg'}">${y.ev==null?'–':(y.ev>0?'+':'')+(y.ev*100).toFixed(1)+'%'}</td></tr>`).join('')}</tbody></table></div></div>`).join('')
+   :'<div class="empty">조건에 맞는 선택이 없습니다. 최소 확률을 낮추거나 “배당 2.0 이상만”을 꺼 보세요.</div>';
+  $('#vlist').querySelectorAll('input[data-key]').forEach(inp=>inp.onchange=()=>{const v=parseFloat(inp.value);if(v>1)bOdds[inp.dataset.key]=v;else delete bOdds[inp.dataset.key];store.set('betman-odds',bOdds);vlist();crazy()})}
+function mcmp(){const m=D.market_cmp;if(!m){$('#mcmp').innerHTML='<span class="hint">해외 배당이 붙은 경기가 채점되면 여기서 비교합니다. 해외 배당 키를 아직 안 넣었다면 README의 “해외 배당 연결”을 보세요.</span>';return}
+  const r=(x,n)=>x==null?'–':`${(x>0?'+':'')+(x*100).toFixed(1)}% (${n}건)`;
+  $('#mcmp').innerHTML=`<div class="tablewrap" style="border:0"><table><thead><tr><th>예측</th><th>예측 오차 (${m.n}경기)</th></tr></thead><tbody>
+  <tr><td>내 모델</td><td>${m.model.toFixed(3)}</td></tr><tr><td>해외 시장 배당</td><td>${m.market.toFixed(3)}</td></tr><tr><td>최종 (시장 ${Math.round(m.w*100)}% + 모델)</td><td>${m.final.toFixed(3)}</td></tr></tbody></table></div>
+  <p class="hint" style="margin:8px 0 4px">낮을수록 정확합니다. 최종이 시장보다 낮으면 모델이 시장이 놓친 정보를 조금이라도 더하고 있다는 뜻이고, 높으면 모델 비중을 줄여야 합니다.</p>
+  <div>“모델↑” 선택에 해외 최고 배당으로 1씩 걸었다면: <b class="${m.value_roi>0?'pos':'neg'}">${r(m.value_roi,m.value_n)}</b> · 비교: 시장 1순위에 걸었다면 <b>${r(m.fav_roi,m.fav_n)}</b></div>
+  <p class="hint" style="margin:6px 0 0">해외 최고 배당 기준이라 베트맨보다 훨씬 유리한 조건입니다. 여기서도 수백 건 넘게 +가 유지되지 않으면 베트맨에서는 더 어렵습니다.</p>`}
+function crazy(){const m=D.crazy||0.15,out=[];
+  D.upcoming.filter(r=>(league==='all'||r.league===league)&&r.p_market).forEach(r=>{const pm=r.p_market,labs=LAB(r),fav=pm.indexOf(Math.max(...pm));
+    for(let k=0;k<3;k++){if(k===fav||!labs[k]||pm[k]<0.12)continue;const fair=1/pm[k],line=fair*(1+m),bo=parseFloat(bOdds[r.id+'|'+k]);out.push({r,k,lab:labs[k],p:pm[k],fair,line,bo})}});
+  out.sort((a,b)=>b.p-a.p);
+  $('#crazylist').innerHTML=out.length?`<div class="tablewrap"><table><thead><tr><th>경기</th><th>이변 선택</th><th>해외 확률</th><th>적정 배당</th><th>미친 배당 기준선</th><th>베트맨</th></tr></thead><tbody>${out.slice(0,40).map(x=>`<tr><td>${esc(x.r.kst)} · ${esc(x.r.lname)}<br><small style="color:var(--muted)">${esc(x.r.home)} vs ${esc(x.r.away)}</small></td><td>${esc(x.lab)}</td><td>${pct(x.p)}</td><td>${x.fair.toFixed(2)}</td><td><b>${x.line.toFixed(2)} 이상</b></td><td>${x.bo>1?(x.bo>=x.line?`<span class="ev-pos">${x.bo} 미친 배당</span>`:`<span class="ev-neg">${x.bo}</span>`):'–'}</td></tr>`).join('')}</tbody></table></div><p class="hint">“베트맨” 칸은 아래 가치 찾기에서 그 선택의 베트맨 배당을 적어 두면 채워집니다.</p>`
+   :'<div class="empty">해외 배당이 붙은 경기가 아직 없습니다. 해외 배당은 매일 오전 7시에 30시간 안에 열리는 경기만 받아옵니다.</div>'}
+$('#hionly').onchange=vlist;$('#minv2').oninput=vlist;
+$('#minp').oninput=list;chips();list();vlist();crazy();mcmp();stats();recent();
+</script>
+</body>
+</html>
