@@ -22,8 +22,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: 접속 진단
+        continue-on-error: true
+        run: |
+          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36'
+          for h in site.api.espn.com site.web.api.espn.com; do
+            echo "$h: $(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "https://$h/apis/site/v2/sports/baseball/mlb/scoreboard")"
+          done
+          echo "statsapi.mlb.com: $(curl -s -o /dev/null -w '%{http_code}' 'https://statsapi.mlb.com/api/v1/schedule?sportId=1')"
       - name: 수집 → 예측 → 사이트
-        run: python run_all.py
+        run: python -u run_all.py
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           FORCE_ODDS: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
@@ -33,4 +41,5 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add data docs
           git diff --cached --quiet || git commit -m "데이터 갱신 $(date -u +'%Y-%m-%d %H:%M')"
+          git pull --rebase -X theirs || true
           git push
