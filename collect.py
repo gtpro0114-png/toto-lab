@@ -1,5 +1,5 @@
 """ESPN 공개 스코어보드에서 경기 일정·결과를 받아 data/games.json 에 쌓습니다 (API 키 불필요)."""
-import json, os, time, urllib.request
+import json, os, time, urllib.request, urllib.error
 from datetime import date, datetime, timedelta, timezone
 from config import LEAGUES, LOOKAHEAD_DAYS, REFRESH_PAST_DAYS, REQUEST_SLEEP
 
@@ -24,16 +24,30 @@ def save(path, obj):
     os.replace(tmp, path)
 
 
+HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+           "Accept": "application/json, text/plain, */*", "Accept-Language": "en-US,en;q=0.9"}
+ALT = ("://site.api.espn.com", "://site.web.api.espn.com")   # 한쪽 주소가 막히면 다른 주소로
+
+
 def fetch_json(url):
+    urls = [url, url.replace(*ALT)] if ALT[0] in url else [url]
     last = None
     for attempt in range(3):
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (toto-lab personal research)"})
-            with urllib.request.urlopen(req, timeout=25) as r:
-                return json.loads(r.read().decode("utf-8"))
-        except Exception as e:  # 네트워크 오류는 잠시 쉬고 재시도
-            last = e
-            time.sleep(1.5 * (attempt + 1))
+        blocked = 0
+        for u in urls:
+            try:
+                req = urllib.request.Request(u, headers=HEADERS)
+                with urllib.request.urlopen(req, timeout=25) as r:
+                    return json.loads(r.read().decode("utf-8"))
+            except urllib.error.HTTPError as e:
+                last = e
+                if e.code in (401, 403, 404):
+                    blocked += 1
+            except Exception as e:  # 네트워크 오류는 잠시 쉬고 재시도
+                last = e
+        if blocked == len(urls):
+            break   # 막힌 주소는 재시도해도 소용없음
+        time.sleep(1.5 * (attempt + 1))
     raise last
 
 

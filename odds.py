@@ -109,12 +109,16 @@ def run(now=None, log=print):
     order = sorted(LEAGUES, key=lambda l: 0 if l["mode"] == "market" else 1)
     for lg in order:
         okey = lg.get("odds")
-        if not okey or okey not in active:
+        if not okey:
+            continue
+        if okey not in active:
+            log(f"[{lg['key']}] 해외 배당: 지금은 시즌 중이 아님(비활성) → 건너뜀")
             continue
         try:
             # (1) 시장 전용 리그: 일정 조회(무료)로 경기 목록 생성
             if lg["mode"] == "market":
                 evs = b.get(f"{API}/sports/{okey}/events?apiKey={key}", paid=False)
+                log(f"[{lg['key']}] 일정 {len(evs)}경기 확인")
                 for ev in evs:
                     gid = f'{lg["key"]}-{ev["id"]}'
                     if gid not in games and parse_dt(ev["commence_time"]) <= horizon:
