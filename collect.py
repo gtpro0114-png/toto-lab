@@ -114,8 +114,11 @@ def match_days(lg, start, end, log):
             L = (js.get("leagues") or [{}])[0]
             if not L.get("calendarIsWhitelist"):
                 return None
-            for c in L.get("calendar") or []:
-                ds = c if isinstance(c, str) else (c.get("startDate") or "")
+            cal = L.get("calendar") or []
+            if any(not isinstance(c, str) for c in cal):
+                return None   # 날짜 목록이 아니라 단계(조별리그 등) 목록이면 매일 조회
+            for c in cal:
+                ds = c
                 try:
                     d = date.fromisoformat(ds[:10])
                 except ValueError:

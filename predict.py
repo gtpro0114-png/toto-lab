@@ -2,7 +2,8 @@
 import os
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
-from config import LEAGUES, LOOKAHEAD_DAYS, HALF_LIFE_DAYS, MIN_GAMES_FOR_BACKTEST, MARKET_WEIGHT
+import math
+from config import LEAGUES, LOOKAHEAD_DAYS, HALF_LIFE_DAYS, MIN_GAMES_FOR_BACKTEST, MARKET_WEIGHT, AUTO_CALIBRATE
 from collect import load, save, DATA, GAMES
 from model import Ratings, predict, parse_dt
 
@@ -16,6 +17,32 @@ def result_index(g):
     if g["hs"] < g["as"]:
         return 2
     return 1 if g["sport"] == "soccer" else None
+
+
+def fit_scale(recs):
+    """승·패 두 갈래 종목: 모델 확률을 더 과감하게(>1) 또는 덜 과감하게(<1) 조정할 배율을 과거 검증으로 찾는다."""
+    pts = [(r["p_model"][0] if r.get("p_model") else r["p"][0], 1 if r["result"] == 0 else 0) for r in recs]
+    pts = [(min(0.99, max(0.01, p)), y) for p, y in pts]
+    if len(pts) < 200:
+        return 1.0
+    best, best_b = 1.0, None
+    for i in range(30, 251, 5):
+        a = i / 100
+        b = 0.0
+        for p, y in pts:
+            q = 1 / (1 + math.exp(-a * math.log(p / (1 - p))))
+            b += (q - y) ** 2
+        if best_b is None or b < best_b:
+            best, best_b = a, b
+    return best
+
+
+def apply_scale(pr, a):
+    if not pr or a == 1.0:
+        return pr
+    p = min(0.99, max(0.01, pr["p"][0]))
+    q = 1 / (1 + math.exp(-a * math.log(p / (1 - p))))
+    return {**pr, "p": [q, 0.0, 1 - q]}
 
 
 def make_record(g, pr, source, odds=None):
@@ -77,6 +104,12 @@ def run(now=None, log=print):
                 new_bt += 1
 
         # 2) 실시간 예측: 아직 시작 안 한 경기 (시작 전까지는 매번 최신 데이터로 갱신)
+        scale = 1.0
+        if AUTO_CALIBRATE and lg["sport"] in ("baseball", "basketball") and lg["mode"] == "model":
+            scale = fit_scale([r for r in preds.values() if r["league"] == lg["key"]
+                               and r["source"] == "backtest" and r["result"] is not None])
+            if scale != 1.0:
+                log(f"[{lg['key']}] 확률 자동 보정 배율 {scale:.2f} (1보다 크면 더 과감하게, 작으면 덜 과감하게)")
         r_now = Ratings(done, now, HALF_LIFE_DAYS)
         horizon = now + timedelta(days=LOOKAHEAD_DAYS)
         for g in lst:
@@ -87,7 +120,7 @@ def run(now=None, log=print):
                 old = preds.get(g["id"])
                 if old and old["source"] != "live":
                     continue
-                pr = predict(g, r_now) if lg["mode"] == "model" else None
+                pr = apply_scale(predict(g, r_now), scale) if lg["mode"] == "model" else None
                 o = odds.get(g["id"])
                 if pr or o:
                     preds[g["id"]] = make_record(g, pr, "live", o)

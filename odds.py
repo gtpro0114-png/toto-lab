@@ -7,7 +7,7 @@ import os, re, json, statistics, unicodedata, urllib.request
 from difflib import SequenceMatcher
 from datetime import datetime, timedelta, timezone
 from config import (LEAGUES, ODDS_REGION, ODDS_RUN_HOURS_UTC, LOOKAHEAD_DAYS,
-                    SCORES_EVERY_DAYS, CREDIT_FLOOR, ODDS_WINDOW_HOURS)
+                    SCORES_EVERY_DAYS, CREDIT_FLOOR, ODDS_WINDOW_HOURS, MARKET_ODDS_HOURS_UTC)
 from collect import load, save, DATA, GAMES
 from model import parse_dt
 
@@ -146,7 +146,8 @@ def run(now=None, log=print):
                     log(f"[{lg['key']}] 결과 {n}경기 반영")
 
             # (2) 배당: 앞으로 열릴 경기가 있을 때만 (유료 1크레딧)
-            if not odds_time:
+            this_time = odds_time or (lg["mode"] == "market" and now.hour in MARKET_ODDS_HOURS_UTC)
+            if not this_time:
                 continue
             window = now + timedelta(hours=ODDS_WINDOW_HOURS)
             todo = [g for g in games.values() if g["league"] == lg["key"] and g.get("state") == "pre"

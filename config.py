@@ -18,6 +18,11 @@ LEAGUES = [
     {"key": "mls",        "name": "MLS",          "sport": "soccer", "mode": "model", "espn": "soccer/usa.1",          "odds": "soccer_usa_mls",                 "start": "2025-02-15"},
     {"key": "j1",         "name": "J1리그",       "sport": "soccer", "mode": "model", "espn": "soccer/jpn.1",          "odds": "soccer_japan_j_league",          "start": "2025-02-10"},
     {"key": "ucl",        "name": "챔피언스리그", "sport": "soccer", "mode": "model", "espn": "soccer/uefa.champions", "odds": "soccer_uefa_champs_league",      "start": "2025-09-01"},
+    {"key": "uel",        "name": "유로파리그",   "sport": "soccer", "mode": "model", "espn": "soccer/uefa.europa",    "odds": "soccer_uefa_europa_league",      "start": "2025-09-01"},
+    {"key": "nations",    "name": "네이션스리그", "sport": "soccer", "mode": "model", "espn": "soccer/uefa.nations",   "odds": "soccer_uefa_nations_league",     "start": "2024-09-01"},
+    {"key": "friendly",   "name": "A매치 친선",   "sport": "soccer", "mode": "model", "espn": "soccer/fifa.friendly",  "odds": "soccer_international_friendlies", "start": "2025-03-01"},
+    {"key": "libert",     "name": "리베르타도레스", "sport": "soccer", "mode": "model", "espn": "soccer/conmebol.libertadores", "odds": "soccer_conmebol_copa_libertadores", "start": "2025-02-01"},
+    {"key": "acl",        "name": "AFC 챔피언스리그", "sport": "soccer", "mode": "model", "espn": "soccer/afc.champions", "odds": "soccer_afc_champions_league",   "start": "2025-08-01"},
     {"key": "kleague",    "name": "K리그1",       "sport": "soccer", "mode": "market",                                 "odds": "soccer_korea_kleague1",          "scores": True},
     # ---- 야구 (베트맨: 연장 포함) ----
     {"key": "mlb",        "name": "MLB",          "sport": "baseball", "mode": "model", "espn": "baseball/mlb",        "odds": "baseball_mlb",                   "start": "2026-03-20"},
@@ -38,9 +43,11 @@ REQUEST_SLEEP = 0.25
 # GitHub 저장소 Settings → Secrets → Actions 에 ODDS_API_KEY 로 넣습니다.
 ODDS_REGION = "eu"          # 유럽 배당사(피나클 포함). 리그당 1크레딧
 ODDS_RUN_HOURS_UTC = [22]   # 배당은 하루 한 번(한국시간 오전 7시)만 받음 — 경기 일정 조회는 무료라 매번
+MARKET_ODDS_HOURS_UTC = [22, 9]   # KBO·NPB·K리그는 오후 6시에도 한 번 더 (국내 경기를 전날 밤에 보려고)
 SCORES_EVERY_DAYS = 2       # K리그 결과는 이틀에 한 번(2크레딧)
 ODDS_WINDOW_HOURS = 30     # 30시간 안에 경기가 있는 리그만 배당 조회 (크레딧 절약)
 CREDIT_FLOOR = 25           # 남은 크레딧이 이 밑이면 유료 호출 중단
 MARKET_WEIGHT = 0.7         # 최종 확률 = 해외시장 70% + 내 모델 30%
 VALUE_GAP = 0.05
 CRAZY_MARGIN = 0.15         # 베트맨 배당이 해외 적정 배당보다 15% 이상 높으면 '미친 배당'
+AUTO_CALIBRATE = True       # 과거 검증 결과로 야구·농구 모델 확률의 과신/소심을 자동 보정
